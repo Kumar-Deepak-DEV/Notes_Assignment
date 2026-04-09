@@ -1,0 +1,28 @@
+{
+  "name": "notes_assignment",
+  "version": "1.0.0",
+  "description": "Assignment 2 of nodejs",
+  "homepage": "https://github.com/Kumar-Deepak-DEV/Notes_Assignment#readme",
+  "bugs": {
+    "url": "https://github.com/Kumar-Deepak-DEV/Notes_Assignment/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kumar-Deepak-DEV/Notes_Assignment.git"
+  },
+  "license": "ISC",
+  "author": "Deepak Kumar",
+  "start": "node src/index.js",
+  "dev": "nodemon src/index.js",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.6.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
