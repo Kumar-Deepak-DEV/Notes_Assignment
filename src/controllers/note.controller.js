@@ -125,10 +125,108 @@ const getNotesByStatus = async (req, res, next) => {
   }
 };
 
+const filterNotes = async (req, res, next) => {
+  try {
+    const filter = {};
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
+    if (req.query.isPinned !== undefined) {
+      filter.isPinned = req.query.isPinned === "true";
+    }
+
+    const notes = await Note.find(filter);
+    res.status(200).json({
+      success: true,
+      message: "Notes fetched successfully",
+      count: notes.length,
+      data: notes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getPinnedNotes = async (req, res, next) => {
+  try {
+    const filter = { isPinned: true };
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
+
+    const notes = await Note.find(filter);
+    res.status(200).json({
+      success: true,
+      message: "Pinned notes fetched successfully",
+      count: notes.length,
+      data: notes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const filterByCategory = async (req, res, next) => {
+  try {
+    const { name } = req.query;
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "Query param 'name' is required",
+        data: null
+      });
+    }
+
+    const notes = await Note.find({ category: name });
+    res.status(200).json({
+      success: true,
+      message: `Notes filtered by category: ${name}`,
+      count: notes.length,
+      data: notes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const filterByDateRange = async (req, res, next) => {
+  try {
+    const { from, to } = req.query;
+    if (!from || !to) {
+      return res.status(400).json({
+        success: false,
+        message: "Both 'from' and 'to' query params are required",
+        data: null
+      });
+    }
+
+    const filter = {
+      createdAt: {
+        $gte: new Date(from),
+        $lte: new Date(to)
+      }
+    };
+
+    const notes = await Note.find(filter);
+    res.status(200).json({
+      success: true,
+      message: `Notes fetched between ${from} and ${to}`,
+      count: notes.length,
+      data: notes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 module.exports = {
   createBulkNotes,
   deleteBulkNotes,
   getNotesByCategory,
   getNotesByStatus,
+  filterNotes,
+  getPinnedNotes,
+  filterByCategory,
+  filterByDateRange,
   };
