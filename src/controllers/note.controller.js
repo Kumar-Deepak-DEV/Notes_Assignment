@@ -3,32 +3,22 @@ const Note = require('../models/note.model');
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-const deleteBulkNotes = async (req, res, next) => {
+const createNote = async (req, res, next) => {
   try {
-    const { ids } = req.body;
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    const { title, content } = req.body;
+    if (!title || !content) {
       return res.status(400).json({
         success: false,
-        message: "ids array is required and cannot be empty",
+        message: "Title and content are required",
         data: null
       });
     }
 
-    for (const id of ids) {
-      if (!isValidId(id)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid note ID",
-          data: null
-        });
-      }
-    }
-
-    const deleteResult = await Note.deleteMany({ _id: { $in: ids } });
-    res.status(200).json({
+    const note = await Note.create(req.body);
+    res.status(201).json({
       success: true,
-      message: `${deleteResult.deletedCount} notes deleted successfully`,
-      data: null
+      message: "Note created successfully",
+      data: note
     });
   } catch (error) {
     next(error);
@@ -67,6 +57,206 @@ const createBulkNotes = async (req, res, next) => {
   }
 };
 
+const getAllNotes = async (req, res, next) => {
+  try {
+    const notes = await Note.find();
+    res.status(200).json({
+      success: true,
+      message: "Notes fetched successfully",
+      count: notes.length,
+      data: notes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getNoteById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid note ID",
+        data: null
+      });
+    }
+
+    const note = await Note.findById(id);
+    if (!note) {
+      return res.status(404).json({
+        success: false,
+        message: "Note not found",
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Note fetched successfully",
+      data: note
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const replaceNote = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid note ID",
+        data: null
+      });
+    }
+
+    const { title, content, category, isPinned } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and content are required",
+        data: null
+      });
+    }
+
+    const replacement = {
+      title,
+      content,
+      category: category !== undefined ? category : "personal",
+      isPinned: isPinned !== undefined ? isPinned : false
+    };
+
+    const note = await Note.findByIdAndUpdate(
+      id,
+      replacement,
+      { new: true, overwrite: true, runValidators: true }
+    );
+
+    if (!note) {
+      return res.status(404).json({
+        success: false,
+        message: "Note not found",
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Note replaced successfully",
+      data: note
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateNote = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid note ID",
+        data: null
+      });
+    }
+
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No fields provided to update",
+        data: null
+      });
+    }
+
+    const note = await Note.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!note) {
+      return res.status(404).json({
+        success: false,
+        message: "Note not found",
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Note updated successfully",
+      data: note
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteNote = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid note ID",
+        data: null
+      });
+    }
+
+    const note = await Note.findByIdAndDelete(id);
+    if (!note) {
+      return res.status(404).json({
+        success: false,
+        message: "Note not found",
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Note deleted successfully",
+      data: null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteBulkNotes = async (req, res, next) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "ids array is required and cannot be empty",
+        data: null
+      });
+    }
+
+    for (const id of ids) {
+      if (!isValidId(id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid note ID",
+          data: null
+        });
+      }
+    }
+
+    const deleteResult = await Note.deleteMany({ _id: { $in: ids } });
+    res.status(200).json({
+      success: true,
+      message: `${deleteResult.deletedCount} notes deleted successfully`,
+      data: null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getNotesByCategory = async (req, res, next) => {
   try {
     const { category } = req.params;
@@ -99,7 +289,6 @@ const getNotesByCategory = async (req, res, next) => {
   }
 };
 
-
 const getNotesByStatus = async (req, res, next) => {
   try {
     const { isPinned } = req.params;
@@ -119,6 +308,36 @@ const getNotesByStatus = async (req, res, next) => {
       message: pinned ? "Fetched all pinned notes" : "Fetched all unpinned notes",
       count: notes.length,
       data: notes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getNoteSummary = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid note ID",
+        data: null
+      });
+    }
+
+    const note = await Note.findById(id).select("title category isPinned createdAt");
+    if (!note) {
+      return res.status(404).json({
+        success: false,
+        message: "Note not found",
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Note summary fetched successfully",
+      data: note
     });
   } catch (error) {
     next(error);
@@ -219,14 +438,138 @@ const filterByDateRange = async (req, res, next) => {
   }
 };
 
+const paginateNotes = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await Note.countDocuments();
+    const totalPages = Math.ceil(total / limit);
+    const notes = await Note.find().skip(skip).limit(limit);
+
+    res.status(200).json({
+      success: true,
+      message: "Notes fetched successfully",
+      data: notes,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const paginateByCategory = async (req, res, next) => {
+  try {
+    const { category } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const filter = { category };
+    const total = await Note.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+    const notes = await Note.find(filter).skip(skip).limit(limit);
+
+    res.status(200).json({
+      success: true,
+      message: `Notes fetched for category: ${category}`,
+      data: notes,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const sortNotes = async (req, res, next) => {
+  try {
+    const allowed = ["title", "createdAt", "updatedAt", "category"];
+    const sortBy = req.query.sortBy || "createdAt";
+    const orderStr = req.query.order || "desc";
+
+    if (!allowed.includes(sortBy)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid sortBy. Allowed: title, createdAt, updatedAt, category",
+        data: null
+      });
+    }
+
+    const order = orderStr === "asc" ? 1 : -1;
+    const notes = await Note.find().sort({ [sortBy]: order });
+
+    res.status(200).json({
+      success: true,
+      message: `Notes sorted by ${sortBy} in ${orderStr === 'asc' ? 'ascending' : 'descending'} order`,
+      count: notes.length,
+      data: notes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const sortPinnedNotes = async (req, res, next) => {
+  try {
+    const allowed = ["title", "createdAt", "updatedAt", "category"];
+    const sortBy = req.query.sortBy || "createdAt";
+    const orderStr = req.query.order || "desc";
+
+    if (!allowed.includes(sortBy)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid sortBy. Allowed: title, createdAt, updatedAt, category",
+        data: null
+      });
+    }
+
+    const order = orderStr === "asc" ? 1 : -1;
+    const notes = await Note.find({ isPinned: true }).sort({ [sortBy]: order });
+
+    res.status(200).json({
+      success: true,
+      message: `Pinned notes sorted by ${sortBy} in ${orderStr === 'asc' ? 'ascending' : 'descending'} order`,
+      count: notes.length,
+      data: notes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
+  createNote,
   createBulkNotes,
+  getAllNotes,
+  getNoteById,
+  replaceNote,
+  updateNote,
+  deleteNote,
   deleteBulkNotes,
   getNotesByCategory,
   getNotesByStatus,
+  getNoteSummary,
   filterNotes,
   getPinnedNotes,
   filterByCategory,
   filterByDateRange,
-  };
+  paginateNotes,
+  paginateByCategory,
+  sortNotes,
+  sortPinnedNotes
+};
